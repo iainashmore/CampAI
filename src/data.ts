@@ -12,6 +12,12 @@ export const AD_WEEKS: readonly Point[] = (() => {
   return spend.map((x, i) => ({ x, y: Math.round(40 + 18 * x + noise[i]) }));
 })();
 
+/**
+ * Marketing emails sent each of the same twelve weeks (thousands). Weeks that beat the ads-only
+ * line were mostly big email weeks, so a second input explains most of the leftover misses.
+ */
+export const EMAILS_SENT: readonly number[] = [7, 0, 4.5, 3.5, 6.5, 2.5, 5, 1, 5.5, 2.5, 3, 4.5];
+
 /** Next week's plan, and what actually happened (shown only after the forecast). */
 export const PLANNED_SPEND = 7;
 export const ACTUAL_NEXT_WEEK = 160;

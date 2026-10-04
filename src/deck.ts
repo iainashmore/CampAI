@@ -20,6 +20,8 @@ export interface Scene {
   update(dt: number): void;
   draw(g: Gfx): void;
   pointerDown?(x: number, y: number): void;
+  pointerMove?(x: number, y: number): void;
+  pointerUp?(): void;
 }
 
 export interface DeckState {

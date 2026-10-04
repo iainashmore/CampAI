@@ -1,6 +1,7 @@
 import type { Scene } from '../deck';
 import { C, clamp, easeOut, fmt, type Gfx } from '../gfx';
 import { AD_WEEKS, ACTUAL_NEXT_WEEK, COMPANY, PLANNED_SPEND } from '../data';
+import { PlaneView } from './forecast3d';
 import { gradient, meanSquaredError, predict, step, type LineModel, type Point } from '../ml/linear';
 
 /** The first guess shown on screen: a flat 100 sign-ups whatever we spend. */
@@ -57,6 +58,18 @@ export class ForecastScene implements Scene {
       notes:
         'Next week actually brought 160 sign-ups. The forecast was off by about five. That is a good forecast: no AI model is perfect, because the world is noisy.\n\nThe honest question is never "is it right?" but "how wrong is it, usually?" The typical miss on the panel answers that.',
     },
+    {
+      title: 'A second input: emails',
+      caption: 'Each week we also sent marketing emails. Turn the chart and the weeks spread out in depth.',
+      notes:
+        'Can we do better? Ad spend is not the only thing that changed week to week. We also sent marketing emails.\n\nA second input needs a second direction, so the chart turns into a box: ad spend left to right, emails front to back, sign-ups up. The two-number model becomes a flat sheet. It is the same line, stretched back, because it ignores emails completely.\n\nNotice the weeks that sat above the line are the big email weeks at the back. Drag to turn it.',
+    },
+    {
+      title: 'Three numbers: a tilted plane',
+      caption: 'Each input gets its own number. Learning nudges all three, exactly as before.',
+      notes:
+        'Same learning as before: work out which way each number should move, nudge, repeat. Now there are three numbers, so the sheet tilts to meet the dots.\n\nThe error score drops from 51 to about 7, and the typical miss from 7 sign-ups to 3. Each extra input adds one more number. Four inputs would be a shape we cannot draw, but the maths is identical. The AI models in the news work the same way with billions of numbers.\n\nOne warning for later: more numbers can also fit noise. That is the overfitting scene.',
+    },
   ];
 
   private stepIndex = 0;
@@ -67,6 +80,7 @@ export class ForecastScene implements Scene {
   private stepCarry = 0;
   private history: number[] = [];
   private lastNudge: LineModel = { start: 0, slope: 0 };
+  private plane = new PlaneView();
 
   private get data(): Point[] {
     return [...AD_WEEKS, ...this.extra];
@@ -96,19 +110,27 @@ export class ForecastScene implements Scene {
   enter(s: number, from: number | null): void {
     this.stepIndex = s;
     this.stepT = 0;
+    if (s >= 5) {
+      this.plane.enter(s - 5, from === null || from < 5);
+      return;
+    }
     if (s <= 1) {
       this.extra = [];
       this.reset();
     } else if (s === 2 && (from === null || from < 2)) {
       this.reset();
     } else if (s >= 3) {
-      if (from === null) this.reset();
+      if (from === null || from >= 5) this.reset();
       this.learn(5000);
     }
   }
 
   update(dt: number): void {
     this.stepT += dt;
+    if (this.stepIndex >= 5) {
+      this.plane.update(dt);
+      return;
+    }
     if (this.stepIndex >= 2) {
       this.stepCarry += dt * STEPS_PER_SECOND;
       const n = Math.floor(this.stepCarry);
@@ -119,6 +141,10 @@ export class ForecastScene implements Scene {
   }
 
   pointerDown(x: number, y: number): void {
+    if (this.stepIndex >= 5) {
+      this.plane.pointerDown(x, y);
+      return;
+    }
     if (this.stepIndex < 2 || x < CX0 || x > CX1 || y < CY0 || y > CY1) return;
     const px = clamp(((x - CX0) / (CX1 - CX0)) * XMAX, 0, XMAX);
     const py = clamp(((CY1 - y) / (CY1 - CY0)) * YMAX, 0, YMAX);
@@ -126,7 +152,19 @@ export class ForecastScene implements Scene {
     this.history.push(meanSquaredError(this.model, this.data));
   }
 
+  pointerMove(x: number, y: number): void {
+    if (this.stepIndex >= 5) this.plane.pointerMove(x, y);
+  }
+
+  pointerUp(): void {
+    this.plane.pointerUp();
+  }
+
   draw(g: Gfx): void {
+    if (this.stepIndex >= 5) {
+      this.plane.draw(g);
+      return;
+    }
     this.drawAxes(g);
     const s = this.stepIndex;
     const data = this.data;

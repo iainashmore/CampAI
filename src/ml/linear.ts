@@ -63,3 +63,55 @@ export function bestFit(data: readonly Point[]): LineModel {
   const slope = sxx === 0 ? 0 : sxy / sxx;
   return { start: my - slope * mx, slope };
 }
+
+// The same idea with any number of inputs: one weight per input, plus the start.
+//
+//   prediction = start + w₁ × x₁ + w₂ × x₂ + …
+//
+// With two inputs the model is a tilted plane instead of a line.
+
+export interface Sample {
+  x: readonly number[];
+  y: number;
+}
+
+export interface MultiModel {
+  start: number;
+  weights: number[];
+}
+
+export function predictMany(m: MultiModel, x: readonly number[]): number {
+  let v = m.start;
+  for (let i = 0; i < m.weights.length; i++) v += m.weights[i] * x[i];
+  return v;
+}
+
+export function meanSquaredErrorMany(m: MultiModel, data: readonly Sample[]): number {
+  if (data.length === 0) return 0;
+  let sum = 0;
+  for (const p of data) {
+    const miss = predictMany(m, p.x) - p.y;
+    sum += miss * miss;
+  }
+  return sum / data.length;
+}
+
+/** One learning step for every number at once. Returns the size of the largest nudge. */
+export function stepMany(m: MultiModel, data: readonly Sample[], rate: number): number {
+  const n = Math.max(1, data.length);
+  let dStart = 0;
+  const dW = m.weights.map(() => 0);
+  for (const p of data) {
+    const miss = predictMany(m, p.x) - p.y;
+    dStart += 2 * miss;
+    for (let i = 0; i < dW.length; i++) dW[i] += 2 * miss * p.x[i];
+  }
+  let largest = Math.abs((rate * dStart) / n);
+  m.start -= (rate * dStart) / n;
+  for (let i = 0; i < dW.length; i++) {
+    const nudge = (rate * dW[i]) / n;
+    m.weights[i] -= nudge;
+    largest = Math.max(largest, Math.abs(nudge));
+  }
+  return largest;
+}

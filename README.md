@@ -26,7 +26,7 @@ The address bar keeps your place (`#2.3` = scene 2, step 3), so a reload resumes
 
 | # | Scene | Idea | Status |
 | --- | --- | --- | --- |
-| 1 | Forecast sign-ups | regression, error score, gradient descent | built |
+| 1 | Forecast sign-ups | regression, error score, gradient descent; a second input turns the line into a plane in 3D | built |
 | 2 | Who will cancel? | classification, two kinds of mistake | planned |
 | 3 | Too good to be true | overfitting, test data | planned |
 | 4 | Inside a neural network | forward pass, backprop | planned |

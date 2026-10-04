@@ -99,7 +99,16 @@ function startDeck(): void {
   canvas.addEventListener('pointerdown', (e) => {
     const p = g.toStage(e.clientX, e.clientY);
     deck.scene.pointerDown?.(p.x, p.y);
+    canvas.setPointerCapture(e.pointerId);
   });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!canvas.hasPointerCapture(e.pointerId)) return;
+    const p = g.toStage(e.clientX, e.clientY);
+    deck.scene.pointerMove?.(p.x, p.y);
+  });
+  const release = () => deck.scene.pointerUp?.();
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
 
   window.addEventListener('resize', () => g.resize());
   g.resize();
