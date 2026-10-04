@@ -1,6 +1,7 @@
 import { Deck, type NotesPayload } from './deck';
 import { C, Gfx, H, W, easeOut } from './gfx';
 import { startNotesWindow } from './notes';
+import { ChurnScene } from './scenes/churn';
 import { ForecastScene } from './scenes/forecast';
 import { TitleScene } from './scenes/title';
 
@@ -11,7 +12,7 @@ function startDeck(): void {
   const canvas = document.createElement('canvas');
   document.body.appendChild(canvas);
   const g = new Gfx(canvas);
-  const deck = new Deck([new TitleScene(), new ForecastScene()]);
+  const deck = new Deck([new TitleScene(), new ForecastScene(), new ChurnScene()]);
 
   let changeT = 0;
   let sinceStart = 0;
